@@ -150,6 +150,7 @@ contract LockedTokenVaultTest is Test {
         assertEq(vault.getClaimedBalance(ALICE), 0);
         assertEq(vault.getRemainingBalance(ALICE), 0);
         assertEq(vault.getRemainingRatio(CLIFF_TIME_PLUS_12_MONTH, ALICE), 0);
+        assertEq(vault._UNDISTRIBUTED_AMOUNT_(), AMOUNT.mulDiv(24, 48));
     }
 
     function test_regrantSame() public {
@@ -172,6 +173,32 @@ contract LockedTokenVaultTest is Test {
         assertEq(vault.getRemainingBalance(ALICE), AMOUNT);
     }
 
+    function test_regrantDifferent() public {
+        vm.startPrank(ADMIN);
+        token.approve(address(vault), 2 * AMOUNT);
+        vault.deposit(2 * AMOUNT);
+        _grant();
+        vm.stopPrank();
+        // === CLIFF_TIME_PLUS_12_MONTH ===
+        vm.warp(CLIFF_TIME_PLUS_12_MONTH);
+        vm.prank(ALICE);
+        vault.claim();
+        // regrant here
+        vm.prank(ADMIN);
+        _regrant();
+        // after regrant
+        assertEq(vault.getOriginBalance(ALICE), AMOUNT * 2);
+        assertEq(vault.getClaimedBalance(ALICE), AMOUNT.mulDiv(24, 48));
+        assertEq(vault.getClaimableBalance(ALICE), 0);
+        assertEq(vault.getRemainingBalance(ALICE), AMOUNT * 2);
+        // === CLIFF_TIME_PLUS_12_MONTH + 12 * ONE_MONTH ===
+        vm.warp(CLIFF_TIME_PLUS_12_MONTH + 12 * ONE_MONTH);
+        assertEq(vault.getOriginBalance(ALICE), AMOUNT * 2);
+        assertEq(vault.getClaimedBalance(ALICE), AMOUNT.mulDiv(24, 48));
+        assertEq(vault.getClaimableBalance(ALICE), AMOUNT.mulDiv(24, 48));
+        assertEq(vault.getRemainingBalance(ALICE), AMOUNT);
+    }
+
     function _grant() public {
         address[] memory holderList = new address[](1);
         holderList[0] = ALICE;
@@ -183,6 +210,20 @@ contract LockedTokenVaultTest is Test {
         durationList[0] = DURATION;
         uint256[] memory cliffList = new uint256[](1);
         cliffList[0] = CLIFF_TIME;
+        vault.grant(holderList, amountList, startList, durationList, cliffList);
+    }
+
+    function _regrant() public {
+        address[] memory holderList = new address[](1);
+        holderList[0] = ALICE;
+        uint256[] memory amountList = new uint256[](1);
+        amountList[0] = AMOUNT;
+        uint256[] memory startList = new uint256[](1);
+        startList[0] = CLIFF_TIME_PLUS_12_MONTH;
+        uint256[] memory durationList = new uint256[](1);
+        durationList[0] = 24 * ONE_MONTH;
+        uint256[] memory cliffList = new uint256[](1);
+        cliffList[0] = CLIFF_TIME_PLUS_12_MONTH + 12 * ONE_MONTH;
         vault.grant(holderList, amountList, startList, durationList, cliffList);
     }
 }

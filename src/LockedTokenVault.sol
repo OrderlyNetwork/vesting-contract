@@ -147,8 +147,13 @@ contract LockedTokenVault is Ownable {
             return 0;
         }
         uint256 remainingToken = getRemainingBalance(holder);
-        return
-            originBalances[holder] - remainingToken - claimedBalances[holder];
+        // regrant may cause `claimableToken - claimedBalances[holder]` to be negative
+        uint256 claimableToken = originBalances[holder] - remainingToken;
+        if (claimableToken < claimedBalances[holder]) {
+            return 0;
+        } else {
+            return claimableToken - claimedBalances[holder];
+        }
     }
 
     function getRemainingBalance(address holder) public view returns (uint256) {
