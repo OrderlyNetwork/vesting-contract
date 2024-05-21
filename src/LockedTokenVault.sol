@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
+/// @title A Vault contract that locks up tokens
+/// @author Orderly Network
+/// @notice This contract is used to lock up tokens for a period of time and release them gradually
 contract LockedTokenVault is Ownable {
     using Math for uint256;
     using SafeERC20 for IERC20;
@@ -52,6 +55,14 @@ contract LockedTokenVault is Ownable {
 
     // ============ For Owner ============
 
+    /// @notice Grant token to the holder
+    /// @dev all the list should have the same length
+    /// @dev support regrant, the new grant will overwrite the old one, and the balance will be accumulated
+    /// @param holderList holder list, the address of the holder
+    /// @param amountList amount list, the amount of token to grant
+    /// @param startList start time list, the timestamp when the token start to release
+    /// @param durationList duration list, the duration of the release
+    /// @param cliffList cliff time list, the timestamp when the token is able to claim
     function grant(
         address[] calldata holderList,
         uint256[] calldata amountList,
@@ -79,6 +90,8 @@ contract LockedTokenVault is Ownable {
         _UNDISTRIBUTED_AMOUNT_ = _UNDISTRIBUTED_AMOUNT_ - amount;
     }
 
+    /// @notice recall the token from the holder, all the token will be returned to the owner
+    /// @param holder holder address
     function recall(address holder) external onlyOwner {
         _UNDISTRIBUTED_AMOUNT_ =
             _UNDISTRIBUTED_AMOUNT_ +
@@ -93,6 +106,7 @@ contract LockedTokenVault is Ownable {
 
     // ============ For Holder ============
 
+    /// @notice claim the token that is able to claim
     function claim() external {
         uint256 claimableToken = getClaimableBalance(msg.sender);
         _tokenTransferOut(msg.sender, claimableToken);
