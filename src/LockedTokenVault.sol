@@ -36,6 +36,10 @@ contract LockedTokenVault is Ownable {
     );
 
     error BatchGrantLengthNotMatch();
+    error CliffTimeBeforeStartTime();
+    error CliffTimeTooLate();
+    error AmountZero();
+    error DurationZero();
 
     // ============ Init Functions ============
 
@@ -81,6 +85,18 @@ contract LockedTokenVault is Ownable {
         uint256 amount = 0;
         for (uint256 i = 0; i < holderList.length; ++i) {
             address holder = holderList[i];
+            if (cliffList[i] < startList[i]) {
+                revert CliffTimeBeforeStartTime();
+            }
+            if (cliffList[i] > startList[i] + durationList[i]) {
+                revert CliffTimeTooLate();
+            }
+            if (amountList[i] == 0) {
+                revert AmountZero();
+            }
+            if (durationList[i] == 0) {
+                revert DurationZero();
+            }
             originBalances[holder] = originBalances[holder] + amountList[i];
             startReleaseTime[holder] = startList[i];
             releaseDuration[holder] = durationList[i];
