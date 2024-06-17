@@ -125,10 +125,10 @@ contract LockedTokenVault is Ownable {
     /// @notice claim the token that is able to claim
     function claim() external {
         uint256 claimableToken = getClaimableBalance(msg.sender);
-        _tokenTransferOut(msg.sender, claimableToken);
         claimedBalances[msg.sender] =
             claimedBalances[msg.sender] +
             claimableToken;
+        _tokenTransferOut(msg.sender, claimableToken);
         emit Claim(
             msg.sender,
             originBalances[msg.sender],
